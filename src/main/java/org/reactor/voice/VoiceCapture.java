@@ -16,7 +16,9 @@ public class VoiceCapture {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VoiceCapture.class);
 
-    private static final int DEFAULT_SILENCE_SECONDS = 1;
+    private static final int SILENCE_SECONDS_DEFAULT = 1;
+    private static final int MIN_VOLUME_DEFAULT = 55;
+
     private static final String CAPTURE_FILE_PREFIX = "capture";
     private static final String CAPTURE_FILE_EXTENSION = ".flac";
 
@@ -24,19 +26,19 @@ public class VoiceCapture {
     private Microphone microphone;
     private SpeakingMonitor speakingMonitor;
 
-    public static VoiceCapture capture(int silenceDelayMs, VoiceCaptureListener captureListener) {
-        return new VoiceCapture(silenceDelayMs, captureListener);
+    public static VoiceCapture capture(long minVolume, long silenceDuration, VoiceCaptureListener captureListener) {
+        return new VoiceCapture(minVolume, silenceDuration, captureListener);
     }
 
     public static VoiceCapture capture(VoiceCaptureListener captureListener) {
-        return new VoiceCapture(SECONDS.toMillis(DEFAULT_SILENCE_SECONDS), captureListener);
+        return new VoiceCapture(MIN_VOLUME_DEFAULT, SECONDS.toMillis(SILENCE_SECONDS_DEFAULT), captureListener);
     }
 
-    private VoiceCapture(long silenceDelayMs, VoiceCaptureListener captureListener) {
+    private VoiceCapture(long minVolume, long silenceDelayMilis, VoiceCaptureListener captureListener) {
         this.captureListener = captureListener;
         try {
             initializeMicrophone();
-            initializeSpeakingMonitor(silenceDelayMs);
+            initializeSpeakingMonitor(minVolume, silenceDelayMilis);
         } catch (IOException | LineUnavailableException e) {
             LOGGER.error("An error has occurred while initializing microphone", e);
         }
@@ -50,8 +52,8 @@ public class VoiceCapture {
         LOGGER.info("Initialized microphone, sample rate = {}", microphone.getSampleRate());
     }
 
-    private void initializeSpeakingMonitor(long silenceDelayMilis) {
-        speakingMonitor = new SpeakingMonitor(microphone, silenceDelayMilis) {
+    private void initializeSpeakingMonitor(long minVolume, long silenceDelayMilis) {
+        speakingMonitor = new SpeakingMonitor(microphone, minVolume, silenceDelayMilis) {
 
             @Override
             public void onSpeakingStarted() {

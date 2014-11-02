@@ -16,6 +16,9 @@
     </repositories>
 
     <properties>
+        <java.version>1.8</java.version>
+        <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
+
         <org.json.version>20140107</org.json.version>
         <flac.encoder.version>0.3.1</flac.encoder.version>
         <jorbis.version>0.0.17</jorbis.version>
@@ -25,6 +28,20 @@
         <org.slf4j.slf4j-log4j12.version>1.7.5</org.slf4j.slf4j-log4j12.version>
         <log4j.log4j.version>1.2.12</log4j.log4j.version>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
 

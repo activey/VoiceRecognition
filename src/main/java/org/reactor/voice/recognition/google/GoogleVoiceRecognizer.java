@@ -5,38 +5,34 @@ import static org.reactor.voice.recognition.google.GoogleResponseBuilder.fromJSO
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Properties;
 import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.reactor.voice.recognition.AbstractVoiceRecognizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO needs refactoring
  */
 public class GoogleVoiceRecognizer extends AbstractVoiceRecognizer {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(GoogleVoiceRecognizer.class);
+
     private static final long MIN = 10000000;
     private static final long MAX = 900000009999999L;
     private static final String GOOGLE_DUPLEX_SPEECH_BASE = "https://www.google.com/speech-api/full-duplex/v1/";
 
-    private String apiKey;
-    private String language;
+    private final String apiKey;
+    private final String language;
 
-    @Override
-    public void configureRecognizer(Properties properties) {
-        configureGoogleVoiceRecognizer(new GoogleVoiceRecognizerConfiguration(properties));
-    }
-
-    private void configureGoogleVoiceRecognizer(GoogleVoiceRecognizerConfiguration recognizerConfiguration) {
-        apiKey = recognizerConfiguration.getApiKey();
-        language = recognizerConfiguration.getLanguage();
+    public GoogleVoiceRecognizer(String apiKey, String language) {
+        this.apiKey = apiKey;
+        this.language = language;
     }
 
     public void doRecognizeVoice(byte[] data, int sampleRate) {
@@ -52,22 +48,19 @@ public class GoogleVoiceRecognizer extends AbstractVoiceRecognizer {
     private void downChannel(String urlStr) {
         final String url = urlStr;
         new Thread() {
-
             public void run() {
-                Scanner inStream = openHttpsConnection(url);
+                Scanner inStream = openHttpsGetConnection(url);
                 if (inStream == null) {
-                    // TODO error!
+                    voiceNotRecognized();
                     return;
                 }
                 while (inStream.hasNextLine()) {
                     JSONObject jsonObject = new JSONObject(inStream.nextLine());
-                    System.out.println(jsonObject.toString());
                     GoogleResponse googleResponse = fromJSONObject(jsonObject).build();
-                    if (googleResponse.isEmpty()) {
-                        continue;
+                    if (!googleResponse.isEmpty()) {
+                        voiceRecognized(FROM_GOOGLE_RESPONSE.apply(googleResponse));
+                        return;
                     }
-                    voiceRecognized(FROM_GOOGLE_RESPONSE.apply(googleResponse));
-                    return;
                 }
                 voiceNotRecognized();
             }
@@ -86,7 +79,7 @@ public class GoogleVoiceRecognizer extends AbstractVoiceRecognizer {
         }.start();
     }
 
-    private Scanner openHttpsConnection(String urlStr) {
+    private Scanner openHttpsGetConnection(String urlStr) {
         try {
             URL url = new URL(urlStr);
             URLConnection urlConn = url.openConnection();
@@ -103,18 +96,14 @@ public class GoogleVoiceRecognizer extends AbstractVoiceRecognizer {
             if (resCode == HttpsURLConnection.HTTP_OK) {
                 return new Scanner(httpConn.getInputStream());
             }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("An error occurred while processing HTTPS connection", e);
         }
         return null;
     }
 
     private Scanner openHttpsPostConnection(String urlStr, byte[] data, int sampleRate) {
-        byte[] mextrad = data;
-        int resCode = -1;
-        OutputStream out = null;
+        int resCode;
         try {
             URL url = new URL(urlStr);
             URLConnection urlConn = url.openConnection();
@@ -129,23 +118,19 @@ public class GoogleVoiceRecognizer extends AbstractVoiceRecognizer {
             httpConn.setChunkedStreamingMode(0);
             httpConn.setRequestProperty("Content-Type", "audio/x-flac; rate=" + sampleRate);
             httpConn.connect();
-            try {
-                out = httpConn.getOutputStream();
-                out.write(mextrad);
-                resCode = httpConn.getResponseCode();
-                if (resCode / 100 != 2) {
-                    System.out.println("ERROR");
-                }
-            } catch (IOException e) {
 
+            OutputStream out = httpConn.getOutputStream();
+            out.write(data);
+            resCode = httpConn.getResponseCode();
+            if (resCode / 100 != 2) {
+                System.out.println("ERROR");
+                return null;
             }
             if (resCode == HttpsURLConnection.HTTP_OK) {
                 return new Scanner(httpConn.getInputStream());
             }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("An error occurred while processing HTTPS connection", e);
         }
         return null;
     }

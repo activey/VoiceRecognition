@@ -15,8 +15,6 @@ public abstract class AbstractVoiceRecognizer {
 
     private List<VoiceRecognitionListener> recognitionListeners = new ArrayList();
 
-    public abstract void configureRecognizer(Properties properties);
-
     public final void recognizeVoice(File voiceFile, int sampleRate) throws IOException {
         doRecognizeVoice(mapFileIn(voiceFile), sampleRate);
     }
@@ -37,10 +35,6 @@ public abstract class AbstractVoiceRecognizer {
 
     public final void addListener(VoiceRecognitionListener listener) {
         recognitionListeners.add(listener);
-    }
-
-    public final void removeListener(VoiceRecognitionListener listener) {
-        recognitionListeners.remove(listener);
     }
 
     private byte[] mapFileIn(File infile) throws IOException {

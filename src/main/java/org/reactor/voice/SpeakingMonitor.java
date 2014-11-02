@@ -13,10 +13,10 @@ public class SpeakingMonitor implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpeakingMonitor.class);
 
-    private static final int VOLUME_SILENT = 55;
     private static final int TOTAL_SILENCE_FACTOR = 3;
 
     private final Microphone microphone;
+    private final long minVolume;
     private final long silenceDuration;
 
     private ExecutorService executorService;
@@ -26,8 +26,9 @@ public class SpeakingMonitor implements Runnable {
     private boolean goingSilent = true;
     private long silenceStartedTimestamp = currentTimeMillis();
 
-    public SpeakingMonitor(Microphone microphone, long silenceDuration) {
+    public SpeakingMonitor(Microphone microphone, long minVolume, long silenceDuration) {
         this.microphone = microphone;
+        this.minVolume = minVolume;
         this.silenceDuration = silenceDuration;
 
         initializeMonitorExecutor();
@@ -86,8 +87,7 @@ public class SpeakingMonitor implements Runnable {
     }
 
     private boolean isSpeaking() {
-//        System.out.println(microphone.getVolumeLevel());
-        return microphone.getVolumeLevel() > VOLUME_SILENT;
+        return microphone.getVolumeLevel() > minVolume;
     }
 
     private void notifySilent() {
