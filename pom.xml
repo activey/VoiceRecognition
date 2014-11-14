@@ -18,6 +18,7 @@
     <properties>
         <java.version>1.8</java.version>
         <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
+        <github.global.server>github</github.global.server>
 
         <org.json.version>20140107</org.json.version>
         <flac.encoder.version>0.3.1</flac.encoder.version>
@@ -39,6 +40,38 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <altDeploymentRepository>internal.repo::default::file://${project.build.directory}/mvn-repo</altDeploymentRepository>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.10</version>
+                <configuration>
+                    <message>Maven artifacts for ${project.version}</message>
+                    <noJekyll>true</noJekyll>
+                    <merge>true</merge>
+                    <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+                    <branch>refs/heads/master</branch>
+                    <includes><include>**/*</include></includes>
+                    <repositoryName>maven-repository</repositoryName>
+                    <repositoryOwner>activey</repositoryOwner>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
